@@ -24,11 +24,11 @@ function Landing({ onProfile }: { onProfile: () => void }) {
         <div className="hero-copy">
           <p className="eyebrow eyebrow-rose">Orientación laboral para pensar diferente</p>
           <h1>Tu forma de trabajar <span>merece un lugar.</span></h1>
-          <p className="lede">Enfoca transforma lo que sabes de ti en un mapa para explorar roles, entornos y equipos donde puedas desarrollarte con mayor claridad.</p>
+          <p className="lede">NeuroCareer transforma lo que sabes de ti en un mapa para explorar roles, entornos y equipos donde puedas desarrollarte con mayor claridad.</p>
           <div className="hero-actions"><button className="button primary" onClick={onProfile}>Crear mi perfil</button></div>
           <p className="hero-note">Puedes pausar, omitir una pregunta o volver después. Nada se pierde.</p>
         </div>
-        <div className="hero-stage" aria-label="Ejemplo de cómo Enfoca presenta un mapa de compatibilidad">
+        <div className="hero-stage" aria-label="Ejemplo de cómo NeuroCareer presenta un mapa de compatibilidad">
           <div className="stage-orbit orbit-one" /><div className="stage-orbit orbit-two" />
           <article className="hero-profile-card"><div className="card-rainbow" /><div className="profile-card-top"><div><span>Mapa de carrera</span><strong>Tu lectura inicial</strong></div><b>Privado</b></div><div className="profile-card-body"><p>Las condiciones que vale la pena cuidar</p><h3>Espacio para concentrarte, prioridades visibles y autonomía.</h3></div><div className="profile-dimensions"><div className="dimension-row role"><span>Rol</span><strong>Tareas que disfrutas</strong></div><div className="dimension-row environment"><span>Entorno</span><strong>Ritmo y comunicación</strong></div><div className="dimension-row team"><span>Equipo</span><strong>Cultura y liderazgo</strong></div><div className="dimension-row path"><span>Trayectoria</span><strong>Dirección que buscas</strong></div></div></article>
           <article className="floating-note"><span className="note-line" /><p>Una recomendación siempre incluye sus razones.</p></article>
@@ -37,7 +37,7 @@ function Landing({ onProfile }: { onProfile: () => void }) {
       </div>
     </section>
 
-    <section className="landing-section introduction" id="enfoca"><div className="landing-container intro-grid"><div><p className="eyebrow eyebrow-blue">No es una prueba. Es un punto de partida.</p><h2>Las oportunidades no se ven igual cuando tienes el contexto completo.</h2></div><div className="intro-copy"><p>Enfoca reúne intereses, fortalezas demostrables, energía, comunicación y condiciones de trabajo. No entrega un veredicto: te da información que puedes usar.</p><a href="#como-funciona">Conoce cómo se construye tu mapa</a></div></div></section>
+    <section className="landing-section introduction" id="neurocareer"><div className="landing-container intro-grid"><div><p className="eyebrow eyebrow-blue">No es una prueba. Es un punto de partida.</p><h2>Las oportunidades no se ven igual cuando tienes el contexto completo.</h2></div><div className="intro-copy"><p>NeuroCareer reúne intereses, fortalezas demostrables, energía, comunicación y condiciones de trabajo. No entrega un veredicto: te da información que puedes usar.</p><a href="#como-funciona">Conoce cómo se construye tu mapa</a></div></div></section>
 
     <section className="landing-section story-section" id="como-funciona"><div className="landing-container story-grid"><div className="story-visual"><div className="story-label"><span>Tu perfil</span><strong>Una conversación a la vez</strong></div><div className="story-track"><article><small>01</small><strong>Lo que te interesa</strong><p>Tareas, temas y retos que te dan energía.</p></article><article><small>02</small><strong>Cómo trabajas mejor</strong><p>Ritmo, estructura y forma de comunicarte.</p></article><article><small>03</small><strong>Qué quieres construir</strong><p>Metas, aprendizaje y siguiente dirección.</p></article></div></div><div className="story-copy"><p className="eyebrow eyebrow-green">Construye tu mapa a tu ritmo</p><h2>Una conversación tranquila puede abrir mejores preguntas.</h2><p className="lede">Partimos de experiencias reales para que identifiques lo que te ayuda a hacer un buen trabajo, no de lo que se espera que respondas.</p><button className="text-button landing-text-button" onClick={onProfile}>Empezar mi perfil</button></div></div></section>
 
@@ -53,7 +53,7 @@ function Landing({ onProfile }: { onProfile: () => void }) {
 
 function App() {
   const saved = useMemo(loadSaved, [])
-  const [step, setStep] = useState<Step>('welcome')
+  const [step, setStep] = useState<Step>('profile')
   const [profile, setProfile] = useState<BasicProfile>(saved.profile ?? initialProfile)
   const [answers, setAnswers] = useState<Answers>(saved.answers ?? {})
   const [completed, setCompleted] = useState<string[]>(saved.completed ?? [])
@@ -102,14 +102,14 @@ function App() {
     setAnswers({})
     setCompleted([])
     setQuestionIndex(0)
-    setStep('welcome')
+    setStep('profile')
   }
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={() => setStep('welcome')} aria-label="Ir al inicio de Enfoca"><span>enfoca</span><i /></button>
-        {step === 'welcome' ? <div className="topbar-actions landing-actions"><nav className="landing-nav" aria-label="Navegación principal"><a href="#enfoca">Enfoca</a><a href="#como-funciona">Cómo funciona</a><a href="#equipos">Para equipos</a></nav><button className="header-cta" onClick={() => setStep('profile')}>Crear perfil</button></div> : <div className="topbar-actions">{step !== 'chat' && <div className="save-status">Tus avances se guardan en este dispositivo</div>}</div>}
+        <button className="brand" onClick={() => setStep('profile')} aria-label="Ir al inicio de la orientación"><span>neurocareer</span><i /></button>
+        {step === 'welcome' ? <div className="topbar-actions landing-actions"><nav className="landing-nav" aria-label="Navegación principal"><a href="#neurocareer">NeuroCareer</a><a href="#como-funciona">Cómo funciona</a><a href="#equipos">Para equipos</a></nav><button className="header-cta" onClick={() => setStep('profile')}>Crear perfil</button></div> : <div className="topbar-actions">{step !== 'chat' && <div className="save-status">Tus avances se guardan en este dispositivo</div>}</div>}
       </header>
 
       {step !== 'welcome' && step !== 'chat' && <div className="progress-wrap" aria-label={`Progreso ${Math.round(overallProgress)}%`}><div className="progress" style={{ width: `${overallProgress}%` }} /></div>}
@@ -123,7 +123,7 @@ function App() {
             <label>Nombre completo<input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="Escribe tu nombre" autoComplete="name" /></label>
             <label>Correo electrónico<input type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} placeholder="tu@correo.com" autoComplete="email" /></label>
             {error && <p className="form-error" role="alert">{error}</p>}
-            <div className="actions"><button type="button" className="button secondary" onClick={() => setStep('welcome')}>Atrás</button><button className="button primary" type="submit">Ir a la conversación</button></div>
+            <div className="actions"><button className="button primary" type="submit">Ir a la conversación</button></div>
           </form>
         </section>}
 

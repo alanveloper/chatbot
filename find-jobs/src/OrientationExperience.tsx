@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import './orientation.css'
+import './orientation-overrides.css'
 import { API_URL } from './api'
 
 type Section = 'identity' | 'work_style' | 'strengths' | 'interests' | 'energy' | 'sustainable_conditions' | 'goals' | 'non_negotiables'
@@ -28,7 +29,12 @@ const initialProfile: Profile = {
   goals: { label: 'Objetivos', icon: '◎', status: 'empty', items: [] },
   non_negotiables: { label: 'No negociables', icon: '!', status: 'empty', items: [] },
 }
-const firstInteraction: Interaction = { type: 'free_text', question: 'Para empezar, ¿cómo te gusta que te llamen?', allowText: true, allowVoice: true }
+const consultationQuestions: Interaction[] = [
+  { type: 'single_choice', question: 'Cuando tienes que resolver algo, ¿qué te atrae más?', options: [{ id: 'creative', label: 'Imaginar una idea o darle una forma nueva' }, { id: 'technical', label: 'Entender cómo funciona y encontrar la solución exacta' }], allowText: false, allowVoice: true },
+  { type: 'single_choice', question: '¿Qué ritmo te ayudaría más a trabajar bien?', options: [{ id: 'flexible', label: 'Un ambiente flexible, con autonomía para organizarme' }, { id: 'structured', label: 'Horarios, procesos y entregas muy definidos' }], allowText: false, allowVoice: true },
+  { type: 'free_text', question: 'Cuéntame una actividad que disfrutas hacer, aunque no sea parte de un trabajo.', allowText: true, allowVoice: true },
+]
+const firstInteraction = consultationQuestions[0]
 
 function isInteraction(value: unknown): value is Interaction {
   if (!value || typeof value !== 'object') return false
@@ -75,7 +81,7 @@ function InteractionRenderer({ interaction, onAnswer, disabled, onListen, onStop
   const ranked = interaction.type === 'ranking'
   return <form className="interaction" onSubmit={submit}>
     {!hideQuestion && <p className="interaction-question">{interaction.question}</p>}
-    {false && options.length > 0 && <div className={`interaction-options ${interaction.type} ${ranked ? 'ranking-list' : ''}`}>
+    {options.length > 0 && <div className={`interaction-options ${interaction.type} ${ranked ? 'ranking-list' : ''}`}>
       {options.map((option, index) => <button type="button" key={option.id} className={selected.includes(option.id) ? 'selected' : ''} disabled={disabled} onClick={() => choose(option)}>
         {ranked && <span className="rank">{index + 1}</span>}<span>{option.label}</span>{option.description && <small>{option.description}</small>}
       </button>)}
@@ -91,16 +97,19 @@ export default function OrientationExperience({ firstName }: { firstName: string
   const saved = useMemo(() => { try { return JSON.parse(localStorage.getItem(storageKey) ?? '{}') as { messages?: Message[]; profile?: Profile; interaction?: Interaction } } catch { return {} } }, [])
   const [messages, setMessages] = useState<Message[]>(saved.messages ?? [{ role: 'assistant', content: 'Vamos a platicar. No es un examen y no hay respuestas correctas.' }])
   const [profile, setProfile] = useState<Profile>(saved.profile ?? initialProfile)
-  const [interaction, setInteraction] = useState<Interaction>(saved.interaction ?? firstInteraction)
+  const [interaction, setInteraction] = useState<Interaction>(firstInteraction)
   const [activeSection, setActiveSection] = useState<Section>('identity')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [phase, setPhase] = useState<'welcome' | 'presenting' | 'opening' | 'consultation'>('welcome')
+  const [phase, setPhase] = useState<'welcome' | 'presenting' | 'opening' | 'consultation'>('consultation')
   const [voiceOn, setVoiceOn] = useState(true)
   const [speaking, setSpeaking] = useState(false)
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [voiceError, setVoiceError] = useState('')
+  const [questionStep, setQuestionStep] = useState(0)
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([])
+  const [finished, setFinished] = useState(false)
   const recognitionRef = useRef<RecognitionLike | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const microphoneStreamRef = useRef<MediaStream | null>(null)
@@ -111,6 +120,15 @@ export default function OrientationExperience({ firstName }: { firstName: string
   const voiceSupported = typeof window !== 'undefined' && Boolean(browserSpeech.SpeechRecognition ?? browserSpeech.webkitSpeechRecognition)
   const latestAssistantMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content ?? ''
   const towerPieces = (Object.keys(profile) as Section[]).flatMap((section) => profile[section].items.map((item) => ({ ...item, section })))
+  const creative = quizAnswers[0]?.includes('Imaginar')
+  const flexible = quizAnswers[1]?.includes('flexible')
+  const jobMatches = [
+    { company: 'Lumen Studio', role: 'Diseñador/a de contenido', category: 'Creatividad', score: creative ? (flexible ? 88 : 76) : 42, note: 'Ideas, comunicación visual y un ritmo flexible.' },
+    { company: 'Brújula Digital', role: 'UX Research Assistant', category: 'Producto digital', score: creative ? (flexible ? 82 : 70) : 58, note: 'Investigar necesidades y proponer mejoras en un equipo pequeño.' },
+    { company: 'Nexo Social', role: 'Coordinador/a de comunidad', category: 'Comunidad', score: creative ? 74 : 55, note: 'Crear conversaciones y experiencias para una comunidad.' },
+    { company: 'Vector Systems', role: 'Soporte técnico junior', category: 'Tecnología', score: creative ? 51 : (flexible ? 69 : 82), note: 'Resolver incidencias con procesos claros y aprendizaje técnico.' },
+    { company: 'Precisa Operaciones', role: 'Analista de procesos', category: 'Operaciones', score: creative ? 35 : (flexible ? 58 : 86), note: 'Detalles, orden y entregas con horarios definidos.' },
+  ].sort((a, b) => b.score - a.score)
 
   useEffect(() => { localStorage.setItem(storageKey, JSON.stringify({ messages, profile, interaction })) }, [messages, profile, interaction])
   function speak(text: string) {
@@ -122,9 +140,14 @@ export default function OrientationExperience({ firstName }: { firstName: string
     utterance.onend = utterance.onerror = () => setSpeaking(false)
     window.speechSynthesis.speak(utterance)
   }
+  useEffect(() => {
+    if (phase !== 'consultation') return
+    const timer = window.setTimeout(() => speak(firstInteraction.question), 300)
+    return () => window.clearTimeout(timer)
+  }, [])
   function beginExperience() {
     setPhase('presenting')
-    speak(`Hola${firstName !== 'tu' ? `, ${firstName}` : ''}. Soy Enfoca. Estoy aquí para ayudarte a construir una forma de trabajo que te dé más bienestar, autonomía y conexión con oportunidades reales. No es un examen; iremos a tu ritmo.`)
+    speak(`Hola${firstName !== 'tu' ? `, ${firstName}` : ''}. Soy NeuroCareer. Estoy aquí para ayudarte a construir una forma de trabajo que te dé más bienestar, autonomía y conexión con oportunidades reales. No es un examen; iremos a tu ritmo.`)
     window.setTimeout(() => { setPhase('opening'); window.setTimeout(() => { setPhase('consultation'); speak(firstInteraction.question) }, 1150) }, 4100)
   }
   async function listen() {
@@ -198,29 +221,40 @@ export default function OrientationExperience({ firstName }: { firstName: string
   }
   async function answer(content: string) {
     if (loading) return
-    const nextMessages = [...messages, { role: 'user' as const, content }]
-    setMessages(nextMessages); setLoading(true); setError('')
-    try {
-      const response = await fetch(`${API_URL}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: nextMessages }) })
-      const payload = await response.json() as StructuredResponse & { message?: string; error?: string }
-      if (!response.ok) throw new Error(payload.error ?? 'No pude procesar esa respuesta.')
-      const structured = typeof payload.assistant === 'object' ? payload : undefined
-      const message = structured?.assistant?.message ?? payload.message
-      if (typeof message !== 'string') throw new Error('No pude procesar esa respuesta.')
-      setMessages((items) => [...items, { role: 'assistant', content: message }])
-      if (structured?.profileUpdates) setProfile((current) => profileFromUpdates(current, structured.profileUpdates))
-      const nextInteraction = isInteraction(structured?.interaction) ? structured.interaction : { type: 'free_text' as const, question: 'Cuéntame un poco más, con el detalle que te resulte cómodo.', allowText: true, allowVoice: true }
-      setInteraction(nextInteraction)
-      speak(`${message} ${nextInteraction.question}`)
-    } catch (requestError) { setError(requestError instanceof Error ? 'No pude procesar esa respuesta. Vamos a intentarlo de nuevo.' : 'No pude procesar esa respuesta. Vamos a intentarlo de nuevo.') }
-    finally { setLoading(false) }
+    const normalizedContent = questionStep === 0
+      ? (/creativ|imaginar|diseñ|disen|idea/i.test(content) ? 'Imaginar una idea o darle una forma nueva' : 'Entender cómo funciona y encontrar la solución exacta')
+      : questionStep === 1
+        ? (/flexib|autonom|organizarme/i.test(content) ? 'Un ambiente flexible, con autonomía para organizarme' : 'Horarios, procesos y entregas muy definidos')
+        : content
+    const updatedAnswers = [...quizAnswers, normalizedContent]
+    setQuizAnswers(updatedAnswers)
+    if (questionStep < consultationQuestions.length - 1) {
+      const nextStep = questionStep + 1
+      const transition = nextStep === 1 ? 'Bien. Ahora quiero entender qué tipo de entorno te facilita trabajar.' : 'Perfecto. Para terminar, quiero conocer un poco más de lo que disfrutas.'
+      setQuestionStep(nextStep); setInteraction(consultationQuestions[nextStep])
+      setMessages((items) => [...items, { role: 'user', content: normalizedContent }, { role: 'assistant', content: transition }])
+      speak(`${transition} ${consultationQuestions[nextStep].question}`)
+      return
+    }
+    const creativeAnswer = updatedAnswers[0]?.includes('Imaginar')
+    const flexibleAnswer = updatedAnswers[1]?.includes('flexible')
+    setProfile((current) => {
+      const next = structuredClone(current) as Profile
+      next.interests.items = [{ id: creativeAnswer ? 'creative' : 'technical', label: creativeAnswer ? 'Creatividad' : 'Pensamiento técnico', confidence: 'high', status: 'validated' }]
+      next.work_style.items = [{ id: flexibleAnswer ? 'flexible' : 'structured', label: flexibleAnswer ? 'Flexibilidad' : 'Estructura', confidence: 'high', status: 'validated' }]
+      next.energy.items = [{ id: 'enjoyment', label: 'Actividad que disfruta', confidence: 'medium', status: 'validated' }]
+      return next
+    })
+    setMessages((items) => [...items, { role: 'user', content }, { role: 'assistant', content: 'Con esto ya puedo mostrarte una primera lista de oportunidades compatibles.' }])
+    setFinished(true)
+    speak('Gracias. Estas oportunidades consideran lo que te interesa y el entorno donde podrías trabajar mejor.')
   }
   if (phase !== 'consultation') return <section className={`orientation-entrance ${phase}`} aria-label="Inicio de la orientación profesional">
-    <div className="entrance-copy"><span className="entrance-kicker">Enfoca · tu mapa profesional</span><h1>Tu forma de estar en el trabajo también importa.</h1><p>Construiremos una ruta que te ayude a vivir mejor, reconocer tu valor y conectar con la comunidad empresarial desde lo que realmente necesitas.</p><button className="button primary entrance-cta" onClick={beginExperience} disabled={phase !== 'welcome'}>{phase === 'welcome' ? 'Iniciar mi consulta' : phase === 'presenting' ? 'Enfoca te está recibiendo…' : 'Abriendo tu mapa…'}</button><small>No es un examen. Puedes hacer pausas y responder a tu manera.</small></div>
+    <div className="entrance-copy"><span className="entrance-kicker">NeuroCareer · tu mapa profesional</span><h1>Tu forma de estar en el trabajo también importa.</h1><p>Construiremos una ruta que te ayude a vivir mejor, reconocer tu valor y conectar con la comunidad empresarial desde lo que realmente necesitas.</p><button className="button primary entrance-cta" onClick={beginExperience} disabled={phase !== 'welcome'}>{phase === 'welcome' ? 'Iniciar mi consulta' : phase === 'presenting' ? 'NeuroCareer te está recibiendo…' : 'Abriendo tu mapa…'}</button><small>No es un examen. Puedes hacer pausas y responder a tu manera.</small></div>
     <div className="cube-scene" aria-hidden="true"><div className="cube"><i className="cube-top" /><i className="cube-front" /><i className="cube-side" /><b className="cube-light" /></div><div className="cube-shadow" /></div>
   </section>
   return <section className="consultation-scene" aria-label="Consulta de orientación profesional">
-    <header className="scene-header"><span>ENFOCA · CONSULTA PERSONAL</span><button type="button" className="voice-toggle" onClick={() => { setVoiceOn((active) => !active); window.speechSynthesis?.cancel(); setSpeaking(false) }} aria-pressed={voiceOn}>{voiceOn ? 'Sonido activo' : 'Activar sonido'}</button></header>
-    <main className="bot-consultation"><div className={`bot-figure ${speaking ? 'speaking' : ''} ${listening ? 'listening' : ''}`} aria-hidden="true"><div className="bot-halo" /><div className="bot-head"><i className="bot-eye left" /><i className="bot-eye right" /><i className="bot-mouth" /></div><div className="bot-body" /></div><div className="agent-words" aria-live="polite"><span>{speaking ? 'Enfoca está hablando' : loading ? 'Enfoca está procesando' : 'Enfoca'}</span><p>{interaction.question || latestAssistantMessage}</p></div>{(error || voiceError) && <div className="orientation-error" role="alert">{error || voiceError}<button type="button" className="text-button" onClick={() => { setError(''); setVoiceError('') }}>Entendido</button></div>}<InteractionRenderer interaction={interaction} onAnswer={answer} disabled={loading} onListen={listen} onStopListening={stopListeningAndSubmit} listening={listening} transcript={transcript} voiceSupported={voiceSupported} hideQuestion /><section className="tower-stage" aria-label="Tu torre de perfil se construye durante la consulta"><div className="tower-caption"><span>Tu perfil se está construyendo</span><p>{towerPieces.length ? 'Seguimos reuniendo las piezas de tu historia profesional.' : 'Las piezas aparecerán mientras conversamos.'}</p></div><div className="tower-build">{towerPieces.map((piece) => <div key={`${piece.section}-${piece.id}`} className="profile-piece" aria-label={piece.label}><i>{iconForPiece(`${piece.id} ${piece.label}`)}</i><strong>{piece.label}</strong></div>)}{!towerPieces.length && <div className="tower-base"><i /><i /><i /></div>}</div></section></main>
+    <header className="scene-header"><span>NEUROCAREER · CONSULTA PERSONAL</span><button type="button" className="voice-toggle" onClick={() => { setVoiceOn((active) => !active); window.speechSynthesis?.cancel(); setSpeaking(false) }} aria-pressed={voiceOn}>{voiceOn ? 'Sonido activo' : 'Activar sonido'}</button></header>
+    <main className="bot-consultation"><div className={`bot-figure ${speaking ? 'speaking' : ''} ${listening ? 'listening' : ''}`} aria-hidden="true"><div className="bot-halo" /><div className="bot-head"><i className="bot-eye left" /><i className="bot-eye right" /><i className="bot-mouth" /></div><div className="bot-body" /></div><div className="agent-words" aria-live="polite"><span>{speaking ? 'NeuroCareer está hablando' : loading ? 'NeuroCareer está procesando' : 'NeuroCareer'}</span><p>{finished ? 'Estas son las oportunidades que mejor encajan con lo que nos contaste.' : consultationQuestions[questionStep].question}</p></div>{(error || voiceError) && <div className="orientation-error" role="alert">{error || voiceError}<button type="button" className="text-button" onClick={() => { setError(''); setVoiceError('') }}>Entendido</button></div>}{!finished && <InteractionRenderer interaction={interaction} onAnswer={answer} disabled={loading} onListen={listen} onStopListening={stopListeningAndSubmit} listening={listening} transcript={transcript} voiceSupported={voiceSupported} hideQuestion />}{finished && <section className="job-matches" aria-label="Oportunidades compatibles">{jobMatches.map((job) => <article key={job.role}><span>{job.category}</span><strong>{job.role}</strong><p>{job.company} · {job.note}</p><b>{job.score}% compatible</b></article>)}</section>}<section className="tower-stage" aria-label="Tu torre de perfil se construye durante la consulta"><div className="tower-caption"><span>{finished ? 'Las piezas de tu perfil' : 'Tu perfil se está construyendo'}</span><p>{towerPieces.length ? 'Seguimos reuniendo las piezas de tu historia profesional.' : 'Las piezas aparecerán mientras conversamos.'}</p></div><div className="tower-build">{towerPieces.map((piece) => <div key={`${piece.section}-${piece.id}`} className="profile-piece" aria-label={piece.label}><i>{iconForPiece(`${piece.id} ${piece.label}`)}</i><strong>{piece.label}</strong></div>)}{!towerPieces.length && <div className="tower-base"><i /><i /><i /></div>}</div></section></main>
   </section>
 }

@@ -1,0 +1,15 @@
+.agent-words {
+  max-width: 760px;
+  margin-top: 13px;
+}
+
+.agent-words p {
+  font-size: clamp(29px, 4vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.14;
+}
+
+@media (max-width: 560px) {
+  .agent-words p { font-size: clamp(25px, 8vw, 34px); }
+}
