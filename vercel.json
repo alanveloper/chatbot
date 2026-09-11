@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd find-jobs && pnpm install --frozen-lockfile",
+  "buildCommand": "cd find-jobs && pnpm build",
+  "outputDirectory": "find-jobs/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
