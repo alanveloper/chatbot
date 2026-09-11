@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import './orientation.css'
+import { API_URL } from './api'
 
 type Section = 'identity' | 'work_style' | 'strengths' | 'interests' | 'energy' | 'sustainable_conditions' | 'goals' | 'non_negotiables'
 type Status = 'empty' | 'exploring' | 'emerging' | 'provisional' | 'validated'
@@ -28,7 +29,6 @@ const initialProfile: Profile = {
   non_negotiables: { label: 'No negociables', icon: '!', status: 'empty', items: [] },
 }
 const firstInteraction: Interaction = { type: 'free_text', question: 'Para empezar, ¿cómo te gusta que te llamen?', allowText: true, allowVoice: true }
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 function isInteraction(value: unknown): value is Interaction {
   if (!value || typeof value !== 'object') return false

@@ -11,9 +11,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: latest
         version: 6.1.1(vite@8.2.2)
-      openai:
-        specifier: ^7.13.0
-        version: 7.15.0(zod@4.6.1)
       react:
         specifier: latest
         version: 19.3.0
@@ -734,30 +731,6 @@ packages:
   node-releases@2.0.55:
     resolution: {integrity: sha512-mIrE/Cw9y+9Au6dS5vDKDhQza9YvG6w+ZrS6X+ZzA7yFW/soAeaups4Qzn1bL6g5FVy8WtP79+0j82oPIbqRjQ==}
     engines: {node: '>=18'}
-
-  openai@7.15.0:
-    resolution: {integrity: sha512-2DIwesnPSduw68MFx7nAdgvshrgvS8WOan5W8+tgUMlAy/tY+Q41g80Pa+w/v64rHA6rtn+dketa8QvMVxU96w==}
-    engines: {node: '>=22.0.0'}
-    peerDependencies:
-      '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
-      '@smithy/hash-node': '>=4.3.0 <5'
-      '@smithy/signature-v4': '>=5.4.0 <6'
-      undici: '>=5 <9'
-      ws: ^8.21.0
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      '@aws-sdk/credential-provider-node':
-        optional: true
-      '@smithy/hash-node':
-        optional: true
-      '@smithy/signature-v4':
-        optional: true
-      undici:
-        optional: true
-      ws:
-        optional: true
-      zod:
-        optional: true
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -1588,10 +1561,6 @@ snapshots:
   natural-compare@1.4.0: {}
 
   node-releases@2.0.55: {}
-
-  openai@7.15.0(zod@4.6.1):
-    optionalDependencies:
-      zod: 4.6.1
 
   optionator@0.9.4:
     dependencies:

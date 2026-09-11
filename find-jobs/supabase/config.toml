@@ -40,6 +40,11 @@ verify_jwt = true
 [functions.privacidad]
 verify_jwt = true
 
+# enfoca-api es el port del backend Express que usa el frontend actual, que no
+# inicia sesion. Limita el acceso con el secreto CORS_ORIGIN (dominio de Vercel).
+[functions.enfoca-api]
+verify_jwt = false
+
 # indexar es mantenimiento: no lleva JWT de usuario, valida la service role key
 # por dentro. Nunca la llames desde el navegador.
 [functions.indexar]

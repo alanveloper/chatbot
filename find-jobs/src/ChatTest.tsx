@@ -3,11 +3,10 @@ import './chat-test.css'
 import MicrophoneIcon from './icons/microphone';
 import VolumeIcon from './icons/volume';
 import NoVolumeIcon from './icons/volume-off';
+import { API_URL } from './api'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 type ChatResponse = { message: string; responseId: string }
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export default function ChatTest({ firstName }: { firstName: string }) {
   const initialMessage: Message = {
