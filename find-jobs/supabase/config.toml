@@ -1,0 +1,46 @@
+# Configuracion del CLI de Supabase para Enfoca.
+# El ID es el del proyecto ya creado; con esto "supabase link" no pregunta nada.
+project_id = "xhjcweizspfcpjocgtcl"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+# extensions va en el search_path porque vector y pg_trgm viven ahi.
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+major_version = 17
+
+[auth]
+enabled = true
+# Enfoca no pide correo ni contrasena para empezar: se abre una sesion anonima
+# y, si la persona quiere guardar su avance, despues vincula su correo.
+# Esto tambien hay que activarlo en el dashboard: Authentication > Sign In / Providers.
+enable_anonymous_sign_ins = true
+
+[auth.email]
+enable_signup = true
+# En hackathon sin SMTP configurado, confirmar correo bloquea el registro.
+enable_confirmations = false
+
+# Todas las funciones de persona exigen JWT: sin sesion no hay datos.
+[functions.chat-orientador]
+verify_jwt = true
+
+[functions.match]
+verify_jwt = true
+
+[functions.reporte]
+verify_jwt = true
+
+[functions.reto]
+verify_jwt = true
+
+[functions.privacidad]
+verify_jwt = true
+
+# indexar es mantenimiento: no lleva JWT de usuario, valida la service role key
+# por dentro. Nunca la llames desde el navegador.
+[functions.indexar]
+verify_jwt = false
